@@ -2,6 +2,8 @@ const User = require("../models/account");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const sendMail = require("./SendMail");
+const Hogan = require("hogan.js");
+const fs = require("fs");
 class UserController {
     async register(req, res) {
         try {
@@ -17,9 +19,6 @@ class UserController {
                     .status(400)
                     .json({ msg: "Mật khẩu cần lớn hơn 8 kí tự." });
             }
-            const subject = "Đăng ký tài khoản.";
-            const htmlForm = "";
-            sendMail(email, subject, htmlForm);
             const newPass = await bcrypt.hash(password, 12);
             const newUser = new User({
                 email,
@@ -28,10 +27,19 @@ class UserController {
             });
 
             const accessToken = getAccessToken(newUser);
+            const subject = "Đăng ký tài khoản.";
+            const template = fs.readFileSync("./src/views/email.hjs", "utf-8");
+            const compileTemplate = Hogan.compile(template);
+            sendMail(
+                email,
+                subject,
+                compileTemplate.render({
+                    urlSend: `https://localhost:3000/active/${accessToken}`,
+                })
+            );
 
             return res.status(200).json({
                 msg: "Vui lòng kiểm tra email của bạn để hoàn tất quá trình.",
-                accessToken,
             });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
