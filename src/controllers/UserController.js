@@ -73,7 +73,6 @@ class UserController {
             return res.status(200).json({
                 msg: "Đăng nhập thành công.",
                 accessToken,
-                rule: user.rule,
                 follows: user.follows,
                 name: user.name,
             });
@@ -153,7 +152,6 @@ class UserController {
                 email: data.email,
                 password: hashedPassword,
                 image: data.picture.url,
-                rule: "user",
                 name: data.name,
             });
             await user.save();
@@ -161,7 +159,6 @@ class UserController {
             return res.status(200).json({
                 msg: "Đăng ký thành công.",
                 accessToken,
-                rule: user.rule,
                 follows: user.follows,
                 name: user.name,
             });
@@ -200,7 +197,6 @@ class UserController {
             return res.status(200).json({
                 msg: "Đăng nhập thành công.",
                 accessToken,
-                rule: oldUser.rule,
                 follows: oldUser.follows,
                 name: oldUser.name,
             });
@@ -247,7 +243,6 @@ class UserController {
                 return res.status(200).json({
                     msg: "Đăng ký thành công.",
                     accessToken,
-                    rule: user.rule,
                     follows: user.follows,
                     name: payload.name,
                 });
@@ -292,7 +287,6 @@ class UserController {
                 return res.status(200).json({
                     msg: "Đăng nhập thành công.",
                     accessToken,
-                    rule: oldUser.rule,
                     follows: oldUser.follows,
                     name: oldUser.name,
                 });
@@ -305,10 +299,15 @@ class UserController {
 }
 
 function getAccessToken(user) {
-    return jwt.sign({ user }, process.env.ACCESSTOKEN, {
-        expiresIn: "10m",
-    });
+    return jwt.sign(
+        { id: user._id, rule: user.rule },
+        process.env.ACCESSTOKEN,
+        {
+            expiresIn: "10m",
+        }
+    );
 }
+
 function getAccessTokenActive(user) {
     return jwt.sign({ user }, process.env.ACCESSTOKEN, {
         expiresIn: "2m",
