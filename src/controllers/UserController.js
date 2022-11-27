@@ -10,7 +10,7 @@ const { OAuth2Client } = require("google-auth-library");
 class UserController {
     async register(req, res) {
         try {
-            const { email, password, image } = req.body;
+            const { email, password, image, name } = req.body;
             const user = await User.findOne({ email });
             if (user) {
                 return res
@@ -27,6 +27,7 @@ class UserController {
                 email,
                 password: newPass,
                 image,
+                name,
             });
 
             const accessToken = getAccessTokenActive(newUser);
@@ -37,8 +38,9 @@ class UserController {
                 email,
                 subject,
                 compileTemplate.render({
-                    urlSend: `https://localhost:3000/active/${accessToken}`,
-                    content: "Cảm ơn bạn đã đăng ký tài khoản hehe.",
+                    urlSend: `https://localhost:3000/account/active/${accessToken}`,
+                    content:
+                        "Cảm ơn bạn đã đăng ký tài khoản bạn có 2 phút để nhấn vào nút bên dưới.",
                     kind: "Đăng ký",
                     title: "Bạn vui lòng nhấn vào nút bên dưới để hoàn thành quá trình đăng ký.",
                 })
@@ -68,9 +70,12 @@ class UserController {
                     .json({ msg: "Tài khoản hoặc mật khẩu không chính xác." });
             }
             const accessToken = getAccessToken(user);
-            return res
-                .status(200)
-                .json({ msg: "Đăng nhập thành công.", accessToken });
+            return res.status(200).json({
+                msg: "Đăng nhập thành công.",
+                accessToken,
+                rule: user.rule,
+                follows: user.follows,
+            });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
         }
@@ -89,6 +94,7 @@ class UserController {
                     email: infor.user.email,
                     password: infor.user.password,
                     image: infor.user.image,
+                    name: infor.user.name,
                 });
                 await newUser.save();
                 res.status(200).json({ msg: "Đăng ký thành công." });
@@ -147,12 +153,16 @@ class UserController {
                 password: hashedPassword,
                 image: data.picture.url,
                 rule: "user",
+                name: data.name,
             });
             await user.save();
             const accessToken = getAccessToken(user);
-            return res
-                .status(200)
-                .json({ msg: "Đăng ký thành công.", accessToken });
+            return res.status(200).json({
+                msg: "Đăng ký thành công.",
+                accessToken,
+                rule: user.rule,
+                follows: user.follows,
+            });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
         }
@@ -167,16 +177,30 @@ class UserController {
             const data = await product.json();
 
             const oldUser = await User.findOne({ email: data.email });
+
             if (!oldUser) {
                 return res
                     .status(400)
                     .json({ msg: "Xin lỗi tài khoản này không tồn tại." });
             }
 
+            const validDation = await bcrypt.compare(
+                data.id + process.env.ACCESSTOKEN,
+                oldUser.password
+            );
+            if (!validDation) {
+                return res.status(400).json({
+                    msg: "Tài khoản này đã được đăng ký bằng cách khác.",
+                });
+            }
+
             const accessToken = getAccessToken(oldUser);
-            return res
-                .status(200)
-                .json({ msg: "Đăng nhập thành công.", accessToken });
+            return res.status(200).json({
+                msg: "Đăng nhập thành công.",
+                accessToken,
+                rule: oldUser.rule,
+                follows: oldUser.follows,
+            });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
         }
@@ -217,9 +241,12 @@ class UserController {
                 });
                 await user.save();
                 const accessToken = getAccessToken(user);
-                return res
-                    .status(200)
-                    .json({ msg: "Đăng ký thành công.", accessToken });
+                return res.status(200).json({
+                    msg: "Đăng ký thành công.",
+                    accessToken,
+                    rule: user.rule,
+                    follows: user.follows,
+                });
             }
             verify().catch(console.error);
         } catch (err) {
@@ -248,10 +275,22 @@ class UserController {
                         .status(400)
                         .json({ msg: "Xin lỗi tài khoản này không tồn tại." });
                 }
+                const validDation = await bcrypt.compare(
+                    payload.sub + process.env.ACCESSTOKEN,
+                    oldUser.password
+                );
+                if (!validDation) {
+                    return res.status(400).json({
+                        msg: "Tài khoản này đã được đăng ký bằng cách khác.",
+                    });
+                }
                 const accessToken = getAccessToken(oldUser);
-                return res
-                    .status(200)
-                    .json({ msg: "Đăng nhập thành công.", accessToken });
+                return res.status(200).json({
+                    msg: "Đăng nhập thành công.",
+                    accessToken,
+                    rule: oldUser.rule,
+                    follows: oldUser.follows,
+                });
             }
             verify().catch(console.error);
         } catch (err) {
