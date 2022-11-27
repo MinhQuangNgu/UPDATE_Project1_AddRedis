@@ -16,6 +16,8 @@ const accountModel = new schema(
         },
         image: {
             type: String,
+            default:
+                "https://res.cloudinary.com/sttruyen/image/upload/v1669539375/Sttruyenxyz/l60Hf_iscgwm.png",
         },
         rule: {
             type: String,

@@ -75,6 +75,7 @@ class UserController {
                 accessToken,
                 follows: user.follows,
                 name: user.name,
+                image: user.image,
             });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
@@ -151,7 +152,7 @@ class UserController {
             const user = new User({
                 email: data.email,
                 password: hashedPassword,
-                image: data.picture.url,
+                image: data.picture.data.url,
                 name: data.name,
             });
             await user.save();
@@ -161,6 +162,7 @@ class UserController {
                 accessToken,
                 follows: user.follows,
                 name: user.name,
+                image: user.image,
             });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
@@ -199,6 +201,7 @@ class UserController {
                 accessToken,
                 follows: oldUser.follows,
                 name: oldUser.name,
+                image: oldUser.image,
             });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
@@ -244,7 +247,8 @@ class UserController {
                     msg: "Đăng ký thành công.",
                     accessToken,
                     follows: user.follows,
-                    name: payload.name,
+                    name: user.name,
+                    image: user.image,
                 });
             }
             verify().catch(console.error);
@@ -289,6 +293,7 @@ class UserController {
                     accessToken,
                     follows: oldUser.follows,
                     name: oldUser.name,
+                    image: oldUser.image,
                 });
             }
             verify().catch(console.error);
