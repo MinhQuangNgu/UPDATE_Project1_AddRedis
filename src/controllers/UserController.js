@@ -75,6 +75,7 @@ class UserController {
                 accessToken,
                 rule: user.rule,
                 follows: user.follows,
+                name: user.name,
             });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
@@ -162,6 +163,7 @@ class UserController {
                 accessToken,
                 rule: user.rule,
                 follows: user.follows,
+                name: user.name,
             });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
@@ -200,6 +202,7 @@ class UserController {
                 accessToken,
                 rule: oldUser.rule,
                 follows: oldUser.follows,
+                name: oldUser.name,
             });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
@@ -246,6 +249,7 @@ class UserController {
                     accessToken,
                     rule: user.rule,
                     follows: user.follows,
+                    name: payload.name,
                 });
             }
             verify().catch(console.error);
@@ -290,6 +294,7 @@ class UserController {
                     accessToken,
                     rule: oldUser.rule,
                     follows: oldUser.follows,
+                    name: oldUser.name,
                 });
             }
             verify().catch(console.error);
