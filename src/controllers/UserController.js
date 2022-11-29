@@ -308,7 +308,7 @@ function getAccessToken(user) {
         { id: user._id, rule: user.rule },
         process.env.ACCESSTOKEN,
         {
-            expiresIn: "10m",
+            expiresIn: "1h",
         }
     );
 }
