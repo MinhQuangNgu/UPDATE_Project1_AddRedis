@@ -69,7 +69,8 @@ class UserController {
                     .status(400)
                     .json({ msg: "Tài khoản hoặc mật khẩu không chính xác." });
             }
-            const accessToken = getAccessToken(user);
+            const refreshToken = getRefreshToken(user);
+            const accessToken = getAccessToken({ ...user, refreshToken });
             return res.status(200).json({
                 msg: "Đăng nhập thành công.",
                 accessToken,
@@ -156,7 +157,8 @@ class UserController {
                 name: data.name,
             });
             await user.save();
-            const accessToken = getAccessToken(user);
+            const refreshToken = getRefreshToken(user);
+            const accessToken = getAccessToken({ ...user, refreshToken });
             return res.status(200).json({
                 msg: "Đăng ký thành công.",
                 accessToken,
@@ -195,7 +197,8 @@ class UserController {
                 });
             }
 
-            const accessToken = getAccessToken(oldUser);
+            const refreshToken = getRefreshToken(oldUser);
+            const accessToken = getAccessToken({ ...oldUser, refreshToken });
             return res.status(200).json({
                 msg: "Đăng nhập thành công.",
                 accessToken,
@@ -242,7 +245,8 @@ class UserController {
                     name: payload.name,
                 });
                 await user.save();
-                const accessToken = getAccessToken(user);
+                const refreshToken = getRefreshToken(user);
+                const accessToken = getAccessToken({ ...user, refreshToken });
                 return res.status(200).json({
                     msg: "Đăng ký thành công.",
                     accessToken,
@@ -287,7 +291,11 @@ class UserController {
                         msg: "Tài khoản này đã được đăng ký bằng cách khác.",
                     });
                 }
-                const accessToken = getAccessToken(oldUser);
+                const refreshToken = getRefreshToken(oldUser);
+                const accessToken = getAccessToken({
+                    ...oldUser,
+                    refreshToken,
+                });
                 return res.status(200).json({
                     msg: "Đăng nhập thành công.",
                     accessToken,
@@ -301,16 +309,53 @@ class UserController {
             return res.status(500).json({ msg: err.message });
         }
     }
+
+    async getRefreshToken(req, res) {
+        try {
+            const refreshToken = req.headers.token;
+
+            const token = refreshToken.split(" ")[1];
+            jwt.verify(token, process.env.REFRESHTOKEN, async (err, infor) => {
+                if (err) {
+                    return res.status(400).json({ msg: "Vui lòng đăng nhập." });
+                }
+                const user = await User.findById(infor.id);
+                const refreshToken = getRefreshToken(user);
+                const accessToken = getAccessToken({
+                    ...user,
+                    refreshToken,
+                });
+                return res.status(200).json({
+                    accessToken,
+                    follows: user.follows,
+                    name: user.name,
+                    image: user.image,
+                });
+            });
+        } catch (err) {
+            return res.status(500).json({ msg: err.message });
+        }
+    }
 }
 
 function getAccessToken(user) {
     return jwt.sign(
-        { id: user._id, rule: user.rule },
+        {
+            id: user?._doc._id,
+            rule: user?._doc.rule,
+            refreshToken: user.refreshToken,
+        },
         process.env.ACCESSTOKEN,
         {
-            expiresIn: "1h",
+            expiresIn: "3d",
         }
     );
+}
+
+function getRefreshToken(user) {
+    return jwt.sign({ id: user._id }, process.env.REFRESHTOKEN, {
+        expiresIn: "30d",
+    });
 }
 
 function getAccessTokenActive(user) {

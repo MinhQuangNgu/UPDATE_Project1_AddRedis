@@ -8,8 +8,7 @@ const ChapterModel = new schema(
             default: [],
         },
         movie: {
-            type: mongoose.Types.ObjectId,
-            ref: "Products",
+            type: String,
         },
     },
     {

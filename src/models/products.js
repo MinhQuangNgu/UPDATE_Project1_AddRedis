@@ -37,6 +37,7 @@ const productModel = new schema(
                     ref: "Kinds",
                 },
             ],
+            default: [],
         },
         chapters: {
             type: [
@@ -45,6 +46,7 @@ const productModel = new schema(
                     ref: "Chapters",
                 },
             ],
+            default: [],
         },
         image: {
             type: String,

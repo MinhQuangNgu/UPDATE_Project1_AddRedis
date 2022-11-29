@@ -9,5 +9,6 @@ router.post("/facebook/login", UserController.facebookLogin);
 router.post("/facebook/register", UserController.facebookRegister);
 router.post("/google/register", UserController.googleRegister);
 router.post("/google/login", UserController.googleLogin);
+router.get("/token/refresh", UserController.getRefreshToken);
 
 module.exports = router;
