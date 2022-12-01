@@ -9,6 +9,11 @@ router.post(
     ChapterController.createChapter
 );
 router.post(
+    "/createindex/:slug",
+    MiddleWareController.verifyAdmin,
+    ChapterController.createInIndexPosition
+);
+router.post(
     "/update/:id",
     MiddleWareController.verifyAdmin,
     ChapterController.updateChapter
