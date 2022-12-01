@@ -8,5 +8,15 @@ router.post(
     MiddleWareController.verifyAdmin,
     ChapterController.createChapter
 );
+router.post(
+    "/update/:id",
+    MiddleWareController.verifyAdmin,
+    ChapterController.updateChapter
+);
+router.delete(
+    "/delete/:id",
+    MiddleWareController.verifyAdmin,
+    ChapterController.deleteChapter
+);
 
 module.exports = router;

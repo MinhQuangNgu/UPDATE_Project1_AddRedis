@@ -347,7 +347,7 @@ function getAccessToken(user) {
         },
         process.env.ACCESSTOKEN,
         {
-            expiresIn: "3d",
+            expiresIn: "1d",
         }
     );
 }

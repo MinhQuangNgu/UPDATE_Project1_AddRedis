@@ -49,6 +49,30 @@ class ChapterController {
             return res.status(500).json({ msg: err.message });
         }
     }
+
+    async deleteChapter(req, res) {
+        try {
+            const { id } = req.params;
+            const chapter = await Chapter.findById(id);
+            if (!chapter) {
+                return res.status(400).json({ msg: "Không có chương này." });
+            }
+            const product = await Product.findOne({ slug: chapter?.movie });
+            const newArr = product?.chapters?.filter(
+                (item) => item?._id.toString() !== chapter?._id.toString()
+            );
+            await Product.findOneAndUpdate(
+                { slug: product?.slug },
+                {
+                    chapters: newArr,
+                }
+            );
+            await Chapter.findByIdAndDelete(id);
+            return res.status(200).json({ msg: `Chưa xóa thành công.` });
+        } catch (err) {
+            return res.status(500).json({ msg: err.message });
+        }
+    }
 }
 
 module.exports = new ChapterController();

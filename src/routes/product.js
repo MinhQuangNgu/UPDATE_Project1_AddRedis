@@ -3,12 +3,12 @@ const router = require("express").Router();
 const MiddleWareController = require("../controllers/MiddleWareController");
 
 router.post(
-    "/update/:id",
+    "/update/:slug",
     MiddleWareController.verifyAdmin,
     ProductController.updateProduct
 );
 router.delete(
-    "/delete/:id",
+    "/delete/:slug",
     MiddleWareController.verifyAdmin,
     ProductController.deleteProduct
 );

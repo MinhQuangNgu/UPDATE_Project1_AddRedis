@@ -112,7 +112,7 @@ class ProductController {
 
     async updateProduct(req, res) {
         try {
-            const { id } = req.params;
+            const { slug } = req.params;
 
             const {
                 image,
@@ -125,16 +125,19 @@ class ProductController {
                 country,
             } = req.body;
 
-            await Product.findByIdAndUpdate(id, {
-                image,
-                title,
-                seTitle,
-                author,
-                status,
-                kinds,
-                content,
-                country,
-            });
+            await Product.findOneAndUpdate(
+                { slug },
+                {
+                    image,
+                    title,
+                    seTitle,
+                    author,
+                    status,
+                    kinds,
+                    content,
+                    country,
+                }
+            );
             return res.status(200).json({ msg: `Cập nhật ${title}` });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
@@ -143,15 +146,15 @@ class ProductController {
 
     async deleteProduct(req, res) {
         try {
-            const { id } = req.params;
-            const product = await Product.findById(id);
+            const { slug } = req.params;
+            const product = await Product.findOne({ slug });
             if (!product) {
                 return res
                     .status(400)
                     .json({ msg: "Truyện này không tồn tại." });
             }
 
-            await Product.findByIdAndDelete(id);
+            await Product.findOneAndDelete({ slug });
 
             return res.status(200).json({ msg: `Cập nhật ${product.title}` });
         } catch (err) {
@@ -162,7 +165,16 @@ class ProductController {
     async getOne(req, res) {
         try {
             const { slug } = req.params;
-            const product = await Product.findOne({ slug });
+            const product = await Product.findOne({ slug })
+                .populate({
+                    path: "country",
+                })
+                .populate({
+                    path: "kinds",
+                })
+                .populate({
+                    path: "chapters",
+                });
             if (!product) {
                 return res
                     .status(400)
