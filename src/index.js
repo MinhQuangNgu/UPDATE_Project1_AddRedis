@@ -17,6 +17,17 @@ app.use(
 );
 app.use(cookieParser());
 
+const http = require("http").createServer(app);
+
+const io = require("socket.io")(http, {
+    cors: "*",
+});
+io.on("connection", (socket) => {
+    socket.on("comment", (infor) => {
+        console.log(infor);
+    });
+});
+
 mongoose
     .connect(process.env.DATABASE_URL, {
         useNewUrlParser: true,
@@ -32,6 +43,6 @@ const PORT = process.env.PORT || 5000;
 
 router(app);
 
-app.listen(PORT, () => {
+http.listen(PORT, () => {
     console.log("Your website are runnning.");
 });
