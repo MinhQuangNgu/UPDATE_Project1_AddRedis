@@ -31,6 +31,41 @@ io.on("connection", (socket) => {
     socket.on("join", (infor) => {
         socket.join(infor.slug);
     });
+    socket.on("reply", (infor) => {
+        const token = infor.token;
+        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+            if (err) {
+                return;
+            }
+
+            const oldUser = await User.findById(user.id);
+
+            const baseComment = await Comment.findById(infor?.id);
+
+            const comment = new Comment({
+                user: oldUser._id,
+                content: infor.content,
+                movie: "",
+                chapter: "",
+            });
+
+            await comment.save();
+            baseComment.replies.unshift(comment._id);
+            await Comment.findByIdAndUpdate(infor?.id, {
+                replies: baseComment.replies,
+            });
+
+            const com = { ...comment._doc };
+            delete com["user"];
+            io.emit("backRep", {
+                user: {
+                    ...oldUser._doc,
+                },
+                ...com,
+                commentid: baseComment._id,
+            });
+        });
+    });
     socket.on("comment", (infor) => {
         const token = infor.token;
         jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
@@ -49,13 +84,7 @@ io.on("connection", (socket) => {
 
             const com = { ...comment._doc };
             delete com["user"];
-            // socket.emit("backComment", {
-            //     user: {
-            //         ...oldUser._doc,
-            //     },
-            //     ...com,
-            // });
-            io.to(infor.slug).emit("backMan", {
+            io.in(infor.slug).emit("backMan", {
                 user: {
                     ...oldUser._doc,
                 },

@@ -13,6 +13,12 @@ class MessageController {
                 .limit(limit)
                 .populate({
                     path: "user",
+                })
+                .populate({
+                    path: "replies",
+                    populate: {
+                        path: "user",
+                    },
                 });
             return res.status(200).json({ messages: mes });
         } catch (err) {
@@ -25,6 +31,10 @@ class MessageController {
             const comments = await Message.findById(id);
             if (comments) {
                 if (req.user?._id?.toString() === comments.user?.toString()) {
+                    console.log(comments?.replies);
+                    comments?.replies?.forEach(async (item) => {
+                        await Message.findByIdAndDelete(item);
+                    });
                     await Message.findByIdAndDelete(id);
                     return res.status(200).json({ msg: "Xóa thành công." });
                 } else {
