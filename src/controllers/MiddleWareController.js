@@ -41,19 +41,23 @@ class MiddleWareController {
             const accessToken = req.headers.token;
 
             if (!accessToken) {
-                return res.status(400).json({ msg: "Vui lòng đăng nhập." });
+                return res.status(400).json({ msg: "Vui lòng đăng nhập 1." });
             }
             const token = accessToken.split(" ")[1];
             if (!token) {
-                return res.status(400).json({ msg: "Vui lòng đăng nhập." });
+                return res.status(400).json({ msg: "Vui lòng đăng nhập 2." });
             }
-            jwt.verify(token, process.env.ACCESSTOKEN, async (infor, err) => {
+            jwt.verify(token, process.env.ACCESSTOKEN, async (err, infor) => {
                 if (err) {
-                    return res.status(400).json({ msg: "Vui lòng đăng nhập." });
+                    return res
+                        .status(400)
+                        .json({ msg: "Vui lòng đăng nhập 3." });
                 }
                 const user = await User.findById(infor.id);
                 if (!user) {
-                    return res.status(400).json({ msg: "Vui lòng đăng nhập." });
+                    return res
+                        .status(400)
+                        .json({ msg: "Vui lòng đăng nhập 4." });
                 }
                 req.user = user;
                 next();
