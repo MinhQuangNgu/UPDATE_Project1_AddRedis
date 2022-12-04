@@ -50,14 +50,14 @@ io.on("connection", (socket) => {
             });
 
             await comment.save();
-            baseComment.replies.unshift(comment._id);
+            baseComment.replies.push(comment._id);
             await Comment.findByIdAndUpdate(infor?.id, {
                 replies: baseComment.replies,
             });
 
             const com = { ...comment._doc };
             delete com["user"];
-            io.emit("backRep", {
+            io.to(infor.slug).emit("backRep", {
                 user: {
                     ...oldUser._doc,
                 },

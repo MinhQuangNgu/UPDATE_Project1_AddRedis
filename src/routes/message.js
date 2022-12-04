@@ -7,6 +7,11 @@ router.delete(
     MiddeWareController.verifyToken,
     MessageController.deleteMessage
 );
+router.delete(
+    "/delete/:parentid/:id",
+    MiddeWareController.verifyToken,
+    MessageController.deleteChild
+);
 router.get("/:slug", MessageController.getMessage);
 
 module.exports = router;
