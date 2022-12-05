@@ -10,6 +10,7 @@ dotenv.config();
 const User = require("./models/account");
 
 const Comment = require("./models/message");
+const Product = require("./models/products");
 
 const app = express();
 app.use(express.json());
@@ -91,6 +92,45 @@ io.on("connection", (socket) => {
                 ...com,
             });
         });
+    });
+    socket.on("Like", async (infor) => {
+        const comment = await Comment.findById(infor?.id);
+        if (!comment) {
+        } else {
+            if (infor?.type) {
+                await Comment.findByIdAndUpdate(infor?.id, {
+                    likes: comment?.likes + 1,
+                });
+            } else {
+                await Comment.findByIdAndUpdate(infor?.id, {
+                    likes: comment?.likes - 1,
+                });
+            }
+        }
+    });
+
+    socket.on("rating", async (infor) => {
+        const product = await Product.findById(infor?.id);
+        if (product) {
+            if (infor?.type) {
+                await Product.findByIdAndUpdate(infor?.id, {
+                    stars: product?.stars + infor?.star,
+                });
+            } else {
+                await Product.findByIdAndUpdate(infor?.id, {
+                    stars: product?.stars + infor?.star,
+                    reviewers: product?.reviewers + 1,
+                });
+            }
+        }
+    });
+    socket.on("watching", async (infor) => {
+        const product = await Product.findById(infor?.id);
+        if (product) {
+            await Product.findByIdAndUpdate(infor?.id, {
+                watchs: product?.watchs + 1,
+            });
+        }
     });
 });
 
