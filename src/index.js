@@ -161,6 +161,9 @@ io.on("connection", (socket) => {
             const comment = await Comment.findById(infor?.id);
             if (comment) {
                 if (user?.id?.toString() === comment?.user?.toString()) {
+                    comment?.replies?.forEach(async (item) => {
+                        await Comment.findByIdAndDelete(item);
+                    });
                     await Comment.findByIdAndDelete(infor?.id);
                     io.to(infor?.slug).emit("deleteMessageReply", {
                         id: infor?.id,
