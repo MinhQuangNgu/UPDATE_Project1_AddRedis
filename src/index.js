@@ -132,6 +132,63 @@ io.on("connection", (socket) => {
             });
         }
     });
+    socket.on("UpdateMessage", async (infor) => {
+        const token = infor.token;
+        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+            if (err) {
+                return;
+            }
+            const comment = await Comment.findById(infor?.id);
+            if (comment) {
+                await Comment.findByIdAndUpdate(infor?.id, {
+                    content: infor?.content,
+                });
+                if (user?.id?.toString() === comment?.user?.toString()) {
+                    io.to(infor?.slug).emit("updateComment", {
+                        content: infor?.content,
+                        id: infor?.id,
+                    });
+                }
+            }
+        });
+    });
+    socket.on("deleteMessage", (infor) => {
+        const token = infor.token;
+        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+            if (err) {
+                return;
+            }
+            const comment = await Comment.findById(infor?.id);
+            if (comment) {
+                if (user?.id?.toString() === comment?.user?.toString()) {
+                    await Comment.findByIdAndDelete(infor?.id);
+                    io.to(infor?.slug).emit("deleteMessageReply", {
+                        id: infor?.id,
+                    });
+                }
+            }
+        });
+    });
+    socket.on("UpdateReplyMessage", async (infor) => {
+        const token = infor.token;
+        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+            if (err) {
+                return;
+            }
+            const comment = await Comment.findById(infor?.id);
+            if (comment) {
+                if (user?.id?.toString() === comment?.user?.toString()) {
+                    await Comment.findByIdAndUpdate(infor?.id, {
+                        content: infor?.content,
+                    });
+                    io.to(infor?.slug).emit("updateCommentReply", {
+                        content: infor?.content,
+                        id: infor?.id,
+                    });
+                }
+            }
+        });
+    });
 });
 
 mongoose
