@@ -336,6 +336,54 @@ class UserController {
             return res.status(500).json({ msg: err.message });
         }
     }
+
+    async getUserProfifle(req, res) {
+        try {
+            const user = req.user;
+            if (!user) {
+                return res.status(400).json({ msg: "Vui lòng đăng nhập." });
+            }
+            const oldUser = await User.findById(user?.id)
+                .select("-password -rule")
+                .populate({
+                    path: "reads",
+                })
+                .populate({
+                    path: "follows",
+                });
+            if (!oldUser) {
+                return res
+                    .status(400)
+                    .json({ msg: "Tài khoản không hề tồn tại." });
+            }
+            return res.status(200).json({ user: oldUser });
+        } catch (err) {
+            return res.status(500).json({ msg: err.message });
+        }
+    }
+
+    async updateProfile(req, res) {
+        try {
+            const user = req.user;
+            const { name, image } = req.body;
+            if (!user) {
+                return res.status(400).json({ msg: "Vui lòng đăng nhập." });
+            }
+            const oldUser = await User.findById(user?.id);
+            if (!oldUser) {
+                return res
+                    .status(400)
+                    .json({ msg: "Tài khoản không hề tồn tại." });
+            }
+            await User.findByIdAndUpdate(user?.id, {
+                name: name,
+                image: image,
+            });
+            return res.status(200).json({ msg: "Cập nhật thành công." });
+        } catch (err) {
+            return res.status(500).json({ msg: err.message });
+        }
+    }
 }
 
 function getAccessToken(user) {

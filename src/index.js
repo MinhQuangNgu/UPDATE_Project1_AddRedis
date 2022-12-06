@@ -192,6 +192,32 @@ io.on("connection", (socket) => {
             }
         });
     });
+    socket.on("deleteReplyComment", async (infor) => {
+        const token = infor.token;
+        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            const comment = await Comment.findById(infor?.idparent);
+            const comChild = await Comment.findById(infor?.id);
+            if (comment && comChild) {
+                if (user?.id?.toString() === comChild?.user?.toString()) {
+                    comment.replies = comment?.replies?.filter(
+                        (item) => item?.toString() !== infor?.id?.toString()
+                    );
+                    await Comment.findByIdAndUpdate(infor?.idparent, {
+                        replies: comment.replies,
+                    });
+                    await Comment.findByIdAndDelete(infor?.id);
+                    io.to(infor?.slug).emit("deleteReplyBack", {
+                        id: infor?.id,
+                        parentid: infor?.idparent,
+                    });
+                }
+            }
+        });
+    });
 });
 
 mongoose
