@@ -218,6 +218,38 @@ io.on("connection", (socket) => {
             }
         });
     });
+    socket.on("follows", async (infor) => {
+        const token = infor.token;
+        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            const oldUser = await User.findById(user?.id);
+            if (oldUser) {
+                const product = await Product.findById(infor?.id);
+                if (product) {
+                    const check = oldUser.follows.some(
+                        (item) => item?.toString() === product?._id?.toString()
+                    );
+                    if (!check) {
+                        oldUser.follows.push(product?._id);
+                    } else {
+                        oldUser.follows = oldUser.follows.filter(
+                            (item) =>
+                                item?.toString() !== product?._id?.toString()
+                        );
+                    }
+                    await User.findByIdAndUpdate(user?.id, {
+                        follows: oldUser.follows,
+                    });
+                    socket.emit("BackFollow", {
+                        follows: oldUser.follows,
+                    });
+                }
+            }
+        });
+    });
 });
 
 mongoose
