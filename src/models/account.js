@@ -35,8 +35,11 @@ const accountModel = new schema(
         reads: {
             type: [
                 {
-                    type: mongoose.Types.ObjectId,
-                    ref: "Products",
+                    readId: {
+                        type: mongoose.Types.ObjectId,
+                        ref: "Products",
+                    },
+                    chapters: [],
                 },
             ],
             default: [],

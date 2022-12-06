@@ -250,6 +250,51 @@ io.on("connection", (socket) => {
             }
         });
     });
+
+    socket.on("reading", async (infor) => {
+        const token = infor.token;
+        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            const oldUser = await User.findById(user?.id);
+            if (oldUser) {
+                const product = await Product.findById(infor?.id);
+                if (product) {
+                    const check = oldUser.reads.some(
+                        (item) =>
+                            item?.readId?.toString() ===
+                            product?._id?.toString()
+                    );
+                    if (check) {
+                        oldUser.reads = oldUser.reads.map((item) => {
+                            if (
+                                item?.readId?.toString() ===
+                                product?._id?.toString()
+                            ) {
+                                const check2 = item?.chapters.some(
+                                    (item) => item === infor.chapter
+                                );
+                                if (!check2) {
+                                    item.chapters.push(infor.chapter);
+                                }
+                            }
+                            return item;
+                        });
+                    } else {
+                        oldUser.reads.push({
+                            readId: product?._id,
+                            chapters: [infor.chapter],
+                        });
+                    }
+                    await User.findByIdAndUpdate(oldUser._id, {
+                        reads: oldUser.reads,
+                    });
+                }
+            }
+        });
+    });
 });
 
 mongoose

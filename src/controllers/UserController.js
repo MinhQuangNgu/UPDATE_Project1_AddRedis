@@ -77,6 +77,7 @@ class UserController {
                 follows: user.follows,
                 name: user.name,
                 image: user.image,
+                reads: user.reads,
             });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
@@ -165,6 +166,7 @@ class UserController {
                 follows: user.follows,
                 name: user.name,
                 image: user.image,
+                reads: user.reads,
             });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
@@ -205,6 +207,7 @@ class UserController {
                 follows: oldUser.follows,
                 name: oldUser.name,
                 image: oldUser.image,
+                reads: oldUser.reads,
             });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
@@ -253,6 +256,7 @@ class UserController {
                     follows: user.follows,
                     name: user.name,
                     image: user.image,
+                    reads: user.reads,
                 });
             }
             verify().catch(console.error);
@@ -300,6 +304,7 @@ class UserController {
                     msg: "Đăng nhập thành công.",
                     accessToken,
                     follows: oldUser.follows,
+                    reads: oldUser.reads,
                     name: oldUser.name,
                     image: oldUser.image,
                 });
@@ -328,6 +333,7 @@ class UserController {
                 return res.status(200).json({
                     accessToken,
                     follows: user.follows,
+                    reads: user.reads,
                     name: user.name,
                     image: user.image,
                 });
@@ -346,7 +352,7 @@ class UserController {
             const oldUser = await User.findById(user?.id)
                 .select("-password -rule")
                 .populate({
-                    path: "reads",
+                    path: "reads.readId",
                 })
                 .populate({
                     path: "follows",
