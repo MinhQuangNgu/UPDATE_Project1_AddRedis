@@ -291,6 +291,9 @@ io.on("connection", (socket) => {
                     await User.findByIdAndUpdate(oldUser._id, {
                         reads: oldUser.reads,
                     });
+                    socket.emit("backReading", {
+                        reads: oldUser.reads,
+                    });
                 }
             }
         });
