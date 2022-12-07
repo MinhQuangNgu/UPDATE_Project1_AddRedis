@@ -44,6 +44,18 @@ const accountModel = new schema(
             ],
             default: [],
         },
+        likes: {
+            type: [
+                {
+                    readId: {
+                        type: mongoose.Types.ObjectId,
+                        ref: "Products",
+                    },
+                    chapters: [],
+                },
+            ],
+            default: [],
+        },
     },
     {
         timestamps: true,

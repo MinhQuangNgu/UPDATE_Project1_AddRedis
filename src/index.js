@@ -232,19 +232,28 @@ io.on("connection", (socket) => {
                     const check = oldUser.follows.some(
                         (item) => item?.toString() === product?._id?.toString()
                     );
+                    let num = false;
                     if (!check) {
                         oldUser.follows.push(product?._id);
+                        await Product.findByIdAndUpdate(product?._id, {
+                            follows: product.follows + 1,
+                        });
+                        num = true;
                     } else {
                         oldUser.follows = oldUser.follows.filter(
                             (item) =>
                                 item?.toString() !== product?._id?.toString()
                         );
+                        await Product.findByIdAndUpdate(product?._id, {
+                            follows: product.follows - 1,
+                        });
                     }
                     await User.findByIdAndUpdate(user?.id, {
                         follows: oldUser.follows,
                     });
                     socket.emit("BackFollow", {
                         follows: oldUser.follows,
+                        num: num,
                     });
                 }
             }
