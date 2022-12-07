@@ -47,11 +47,8 @@ const accountModel = new schema(
         likes: {
             type: [
                 {
-                    readId: {
-                        type: mongoose.Types.ObjectId,
-                        ref: "Products",
-                    },
-                    chapters: [],
+                    type: mongoose.Types.ObjectId,
+                    ref: "Products",
                 },
             ],
             default: [],

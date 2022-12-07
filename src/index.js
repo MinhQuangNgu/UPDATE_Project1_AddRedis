@@ -307,6 +307,47 @@ io.on("connection", (socket) => {
             }
         });
     });
+
+    socket.on("liking", async (infor) => {
+        const token = infor.token;
+        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+            if (err) {
+                console.log(err);
+                return;
+            }
+            const oldUser = await User.findById(user?.id);
+            if (oldUser) {
+                const product = await Product.findById(infor?.id);
+                if (product) {
+                    let num = false;
+                    const check = oldUser.likes.some(
+                        (item) => item?.toString() === product?._id?.toString()
+                    );
+                    if (!check) {
+                        oldUser.likes.push(product?._id);
+                        await Product.findByIdAndUpdate(product?._id, {
+                            likes: product.likes + 1,
+                        });
+                        num = true;
+                    } else {
+                        oldUser.likes = oldUser.likes.filter(
+                            (item) =>
+                                item?.toString() !== product?._id?.toString()
+                        );
+                        await Product.findByIdAndUpdate(product?._id, {
+                            likes: product.likes - 1,
+                        });
+                    }
+                    await User.findByIdAndUpdate(oldUser?._id, {
+                        likes: oldUser.likes,
+                    });
+                    socket.emit("backLiking", {
+                        num: num,
+                    });
+                }
+            }
+        });
+    });
 });
 
 mongoose
