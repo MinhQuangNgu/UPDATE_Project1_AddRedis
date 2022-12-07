@@ -111,7 +111,7 @@ class UserController {
         try {
             const { email } = req.body;
             const user = await User.findOne({ email });
-            const accessToken = getAccessToken(user);
+            const accessToken = getAccessTokenActive(user);
             const subject = "Quên mật khẩu.";
             const template = fs.readFileSync("./src/views/email.hjs", "utf-8");
             const compileTemplate = Hogan.compile(template);
@@ -119,7 +119,7 @@ class UserController {
                 email,
                 subject,
                 compileTemplate.render({
-                    urlSend: `https://localhost:3000/forgot/${accessToken}`,
+                    urlSend: `https://localhost:3000/auth/forgot/${accessToken}`,
                     content: "Quên mật khẩu.",
                     kind: "Lấy lại mật khẩu",
                     title: "Bạn vui lòng nhấn vào nút bên dưới để hoàn thành quá trình lấy lại mật khẩu.",
@@ -128,6 +128,26 @@ class UserController {
             return res.status(200).json({
                 msg: "Vui lòng kiểm tra email của bạn.",
             });
+        } catch (err) {
+            return res.status(500).json({ msg: err.message });
+        }
+    }
+
+    async changePassword(req, res) {
+        try {
+            const user = req.user;
+            const { password } = req.body;
+            const oldUser = await User.findById(user?.id);
+            if (!oldUser) {
+                return res
+                    .status(400)
+                    .json({ msg: "Tài khoản không hề tồn tại." });
+            }
+            const hashedPassword = await bcrypt.hash(password, 12);
+            await User.findByIdAndUpdate(user?.id, {
+                password: hashedPassword,
+            });
+            return res.status(200).json({ msg: "Đổi mật khẩu thành công." });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
         }
@@ -414,7 +434,7 @@ function getRefreshToken(user) {
 
 function getAccessTokenActive(user) {
     return jwt.sign({ user }, process.env.ACCESSTOKEN, {
-        expiresIn: "2m",
+        expiresIn: "5m",
     });
 }
 

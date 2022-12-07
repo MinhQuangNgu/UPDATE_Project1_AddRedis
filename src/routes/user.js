@@ -4,6 +4,11 @@ const MiddleWareController = require("../controllers/MiddleWareController");
 
 router.post("/register", UserController.register);
 router.post("/login", UserController.login);
+router.post(
+    "/change_password",
+    MiddleWareController.verifyToken,
+    UserController.changePassword
+);
 router.post("/active", UserController.activeMail);
 router.post("/forgot", UserController.forgotPassword);
 router.post("/facebook/login", UserController.facebookLogin);
