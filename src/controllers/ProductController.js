@@ -1,4 +1,6 @@
 const Product = require("../models/products");
+const Kind = require("../models/kinds");
+const Country = require("../models/countries");
 
 class ApiRequest {
     constructor(query, queryString) {
@@ -22,7 +24,14 @@ class ApiRequest {
 
     filtering() {
         const obj = { ...this.queryString };
-        const excludesFields = ["page", "sort", "search", "limit"];
+        const excludesFields = [
+            "page",
+            "sort",
+            "search",
+            "limit",
+            "kind",
+            "country",
+        ];
 
         excludesFields.forEach((el) => {
             delete obj[el];
@@ -52,29 +61,122 @@ class ApiRequest {
 class ProductController {
     async getProduct(req, res) {
         try {
-            const apiRequest = new ApiRequest(
-                Product.find()
-                    .populate({
-                        path: "chapters",
-                    })
-                    .populate({
-                        path: "country",
-                    })
-                    .populate({
-                        path: "kinds",
-                    }),
-                req.query
-            )
-                .paginating()
-                .filtering()
-                .searching()
-                .sorting();
+            const kind = req.query.kind || "";
+            const country = req.query.country || "";
 
-            const products = await apiRequest.query;
-            const count = await Product.count(
-                apiRequest.query.limit(null).skip(null)
-            );
-            res.status(200).json({ Products: products, count });
+            let kindContain = "";
+            let countryContain = "";
+            if (kind) {
+                kindContain = await Kind.findOne({ slug: kind });
+            }
+            if (country) {
+                countryContain = await Country.findOne({ slug: country });
+            }
+
+            if (!kind && !country) {
+                const apiRequest = new ApiRequest(
+                    Product.find()
+                        .populate({
+                            path: "chapters",
+                        })
+                        .populate({
+                            path: "country",
+                        })
+                        .populate({
+                            path: "kinds",
+                        }),
+                    req.query
+                )
+                    .paginating()
+                    .filtering()
+                    .searching()
+                    .sorting();
+
+                const products = await apiRequest.query;
+                const count = await Product.count(
+                    apiRequest.query.limit(null).skip(null)
+                );
+                return res.status(200).json({ Products: products, count });
+            } else if (!kind && country) {
+                const apiRequest = new ApiRequest(
+                    Product.find({
+                        country: countryContain?._id,
+                    })
+                        .populate({
+                            path: "chapters",
+                        })
+                        .populate({
+                            path: "country",
+                        })
+                        .populate({
+                            path: "kinds",
+                        }),
+                    req.query
+                )
+                    .paginating()
+                    .filtering()
+                    .searching()
+                    .sorting();
+
+                const products = await apiRequest.query;
+                const count = await Product.count(
+                    apiRequest.query.limit(null).skip(null)
+                );
+                return res.status(200).json({ Products: products, count });
+            } else if (kind && !country) {
+                const apiRequest = new ApiRequest(
+                    Product.find({
+                        kinds: kindContain?._id,
+                    })
+                        .populate({
+                            path: "chapters",
+                        })
+                        .populate({
+                            path: "country",
+                        })
+                        .populate({
+                            path: "kinds",
+                        }),
+                    req.query
+                )
+                    .paginating()
+                    .filtering()
+                    .searching()
+                    .sorting();
+
+                const products = await apiRequest.query;
+                const count = await Product.count(
+                    apiRequest.query.limit(null).skip(null)
+                );
+                return res.status(200).json({ Products: products, count });
+            } else {
+                const apiRequest = new ApiRequest(
+                    Product.find({
+                        kinds: kindContain?._id,
+                        country: countryContain?._id,
+                    })
+                        .populate({
+                            path: "chapters",
+                        })
+                        .populate({
+                            path: "country",
+                        })
+                        .populate({
+                            path: "kinds",
+                        }),
+                    req.query
+                )
+                    .paginating()
+                    .filtering()
+                    .searching()
+                    .sorting();
+
+                const products = await apiRequest.query;
+                const count = await Product.count(
+                    apiRequest.query.limit(null).skip(null)
+                );
+                res.status(200).json({ Products: products, count });
+            }
         } catch (err) {
             return res.status(500).json({ msg: err.message });
         }
