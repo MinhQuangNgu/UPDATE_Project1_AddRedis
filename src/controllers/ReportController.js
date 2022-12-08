@@ -21,9 +21,6 @@ class ReportController {
             const count = await Report.count(
                 await Report.find()
                     .populate({
-                        path: "from",
-                    })
-                    .populate({
                         path: "to",
                     })
                     .populate({

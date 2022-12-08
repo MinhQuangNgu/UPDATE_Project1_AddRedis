@@ -4,16 +4,18 @@ const schema = mongoose.Schema;
 const reportModel = new schema(
     {
         from: {
-            type: mongoose.Types.ObjectId,
-            ref: "Accounts",
+            type: String,
+            default: "",
         },
         to: {
             type: mongoose.Types.ObjectId,
             ref: "Accounts",
+            default: "",
         },
         comment: {
             type: mongoose.Types.ObjectId,
             ref: "Messages",
+            default: "",
         },
         number: {
             type: Number,

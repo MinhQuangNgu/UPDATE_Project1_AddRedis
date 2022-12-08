@@ -11,6 +11,7 @@ const User = require("./models/account");
 
 const Comment = require("./models/message");
 const Product = require("./models/products");
+const Report = require("./models/reports");
 
 const app = express();
 app.use(express.json());
@@ -347,6 +348,29 @@ io.on("connection", (socket) => {
                 }
             }
         });
+    });
+
+    socket.on("reports", async (infor) => {
+        const reports = await Report.findOne({ comment: infor?.to?._id });
+        const comment = await Comment.findById(infor?.to?._id);
+        const user = await User.findById(infor?.to?.user?._id);
+        if (!reports) {
+            const report = new Report({
+                comment: comment?._id,
+                to: user?._id,
+                number: 1,
+            });
+            await report.save();
+        } else {
+            await Report.findOneAndUpdate(
+                {
+                    comment: comment?._id,
+                },
+                {
+                    number: reports.number + 1,
+                }
+            );
+        }
     });
 });
 
