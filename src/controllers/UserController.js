@@ -6,6 +6,7 @@ const Hogan = require("hogan.js");
 const fs = require("fs");
 const fetch = require("node-fetch");
 const { OAuth2Client } = require("google-auth-library");
+const Message = require("../models/message");
 
 class UserController {
     async register(req, res) {
@@ -406,6 +407,28 @@ class UserController {
                 image: image,
             });
             return res.status(200).json({ msg: "Cập nhật thành công." });
+        } catch (err) {
+            return res.status(500).json({ msg: err.message });
+        }
+    }
+
+    async deleteAccount(req, res) {
+        try {
+            const { id } = req.params;
+            const user = await User.findById(id);
+            if (!user) {
+                return res
+                    .status(400)
+                    .json({ msg: "Tài khoản này không còn tồn tại." });
+            }
+            const comments = await Message.find({ user: user?._id });
+            comments.forEach(async (item) => {
+                await Message.findByIdAndDelete(item?._id);
+            });
+            await User.findByIdAndDelete(id);
+            return res
+                .status(200)
+                .json({ msg: `Đã xóa tài khoản ${user?.name}` });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
         }

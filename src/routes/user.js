@@ -16,6 +16,11 @@ router.post("/facebook/register", UserController.facebookRegister);
 router.post("/google/register", UserController.googleRegister);
 router.post("/google/login", UserController.googleLogin);
 router.get("/token/refresh", UserController.getRefreshToken);
+router.delete(
+    "/account/delete/:id",
+    MiddleWareController.verifyAdmin,
+    UserController.deleteAccount
+);
 router.get(
     "/user/profile",
     MiddleWareController.verifyToken,

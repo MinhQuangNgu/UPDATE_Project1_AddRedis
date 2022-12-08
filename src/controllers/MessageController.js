@@ -62,9 +62,9 @@ class MessageController {
                 message.replies.forEach(async (item) => {
                     await Message.findByIdAndDelete(item);
                 });
-                await Message.findByIdAndDelete(id);
-                return res.status(200).json({ msg: "Xóa thành công." });
             }
+            await Message.findByIdAndDelete(id);
+            return res.status(200).json({ msg: "Xóa thành công." });
         } catch (err) {
             return res.status(500).json({ msg: err.message });
         }

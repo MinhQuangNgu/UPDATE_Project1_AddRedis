@@ -53,6 +53,10 @@ const accountModel = new schema(
             ],
             default: [],
         },
+        block: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,
