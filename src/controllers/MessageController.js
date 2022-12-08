@@ -49,6 +49,27 @@ class MessageController {
         }
     }
 
+    async deleteMessageAdmin(req, res) {
+        try {
+            const { id } = req.params;
+            const message = await Message.findById(id);
+            if (!message) {
+                return res
+                    .status(400)
+                    .json({ msg: "Bình luận này không tồn tại." });
+            }
+            if (message.replies.length > 0) {
+                message.replies.forEach(async (item) => {
+                    await Message.findByIdAndDelete(item);
+                });
+                await Message.findByIdAndDelete(id);
+                return res.status(200).json({ msg: "Xóa thành công." });
+            }
+        } catch (err) {
+            return res.status(500).json({ msg: err.message });
+        }
+    }
+
     async deleteChild(req, res) {
         try {
             const { id, parentid } = req.params;

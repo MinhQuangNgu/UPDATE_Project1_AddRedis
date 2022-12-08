@@ -3,6 +3,11 @@ const MessageController = require("../controllers/MessageController");
 const MiddeWareController = require("../controllers/MiddleWareController");
 
 router.delete(
+    "/delete/admin/:id",
+    MiddeWareController.verifyAdmin,
+    MessageController.deleteMessageAdmin
+);
+router.delete(
     "/delete/:id",
     MiddeWareController.verifyToken,
     MessageController.deleteMessage
