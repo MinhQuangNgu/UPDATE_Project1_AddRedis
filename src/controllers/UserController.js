@@ -450,7 +450,7 @@ function getAccessToken(user) {
 }
 
 function getRefreshToken(user) {
-    return jwt.sign({ id: user._id }, process.env.REFRESHTOKEN, {
+    return jwt.sign({ id: user?._id }, process.env.REFRESHTOKEN, {
         expiresIn: "30d",
     });
 }
