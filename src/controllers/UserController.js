@@ -433,14 +433,22 @@ class UserController {
             return res.status(500).json({ msg: err.message });
         }
     }
+    async getAllUser(req, res) {
+        try {
+            const users = await User.find().select("-password -rule");
+            return res.status(200).json({ users });
+        } catch (err) {
+            return res.status(500).json({ msg: err.message });
+        }
+    }
 }
 
 function getAccessToken(user) {
     return jwt.sign(
         {
-            id: user?._doc._id,
-            rule: user?._doc.rule,
-            refreshToken: user.refreshToken,
+            id: user?._doc?._id,
+            rule: user?._doc?.rule,
+            refreshToken: user?.refreshToken,
         },
         process.env.ACCESSTOKEN,
         {
