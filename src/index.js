@@ -15,12 +15,7 @@ const Report = require("./models/reports");
 
 const app = express();
 app.use(express.json());
-app.use(
-    cors({
-        origin: "https://localhost:3000",
-        credentials: true,
-    })
-);
+app.use(cors());
 app.use(cookieParser());
 
 const http = require("http").createServer(app);
