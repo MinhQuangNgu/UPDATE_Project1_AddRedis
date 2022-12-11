@@ -8,6 +8,8 @@ const fetch = require("node-fetch");
 const { OAuth2Client } = require("google-auth-library");
 const Message = require("../models/message");
 
+const url = "http://stphim.xyz";
+
 class UserController {
     async register(req, res) {
         try {
@@ -39,7 +41,7 @@ class UserController {
                 email,
                 subject,
                 compileTemplate.render({
-                    urlSend: `https://localhost:3000/account/active/${accessToken}`,
+                    urlSend: `${url}/account/active/${accessToken}`,
                     content:
                         "Cảm ơn bạn đã đăng ký tài khoản bạn có 2 phút để nhấn vào nút bên dưới.",
                     kind: "Đăng ký",
@@ -120,7 +122,7 @@ class UserController {
                 email,
                 subject,
                 compileTemplate.render({
-                    urlSend: `https://localhost:3000/auth/forgot/${accessToken}`,
+                    urlSend: `${url}/auth/forgot/${accessToken}`,
                     content: "Quên mật khẩu.",
                     kind: "Lấy lại mật khẩu",
                     title: "Bạn vui lòng nhấn vào nút bên dưới để hoàn thành quá trình lấy lại mật khẩu.",
@@ -346,6 +348,11 @@ class UserController {
                     return res.status(400).json({ msg: "Vui lòng đăng nhập." });
                 }
                 const user = await User.findById(infor.id);
+                if (!user) {
+                    return res
+                        .status(400)
+                        .json({ msg: "Xin lỗi vui lòng đăng nhập lại." });
+                }
                 const refreshToken = getRefreshToken(user);
                 const accessToken = getAccessToken({
                     ...user,
@@ -374,9 +381,15 @@ class UserController {
                 .select("-password -rule")
                 .populate({
                     path: "reads.readId",
+                    populate: {
+                        path: "chapters",
+                    },
                 })
                 .populate({
                     path: "follows",
+                    populate: {
+                        path: "chapters",
+                    },
                 });
             if (!oldUser) {
                 return res
