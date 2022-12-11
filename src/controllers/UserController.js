@@ -8,7 +8,7 @@ const fetch = require("node-fetch");
 const { OAuth2Client } = require("google-auth-library");
 const Message = require("../models/message");
 
-const url = "http://stphim.xyz";
+const url = "https://localhost:3000";
 
 class UserController {
     async register(req, res) {
