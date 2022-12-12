@@ -15,7 +15,12 @@ const Report = require("./models/reports");
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(
+    cors({
+        origin: ["https://stphim.xyz/", "https://www.stphim.xyz/"],
+        credentials: true,
+    })
+);
 app.use(cookieParser());
 
 const http = require("http").createServer(app);
