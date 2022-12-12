@@ -45,7 +45,7 @@ class ApiRequest {
     }
 
     searching() {
-        const search = this.query.search;
+        const search = this.queryString.searching;
         if (search) {
             this.query = this.query.find({
                 $text: {
