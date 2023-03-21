@@ -5,7 +5,13 @@ const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const router = require("./routes/index");
 const jwt = require("jsonwebtoken");
+const compression = require("compression");
+const os = require("os");
+const helmet = require("helmet");
 dotenv.config();
+if (os.cpus().length > 2) {
+	process.env.UV_THREADPOOL_SIZE = os.cpus().length - 2;
+}
 
 const User = require("./models/account");
 
@@ -14,376 +20,375 @@ const Product = require("./models/products");
 const Report = require("./models/reports");
 
 const app = express();
+app.use(compression());
 app.use(express.json());
-app.use(cors());
+app.use(
+	cors({
+		origin: "https://localhost:3000",
+	})
+);
+app.use(helmet());
 app.use(cookieParser());
 
 const http = require("http").createServer(app);
 
 const io = require("socket.io")(http, {
-    cors: "*",
+	cors: "*",
 });
 
 io.on("connection", (socket) => {
-    socket.on("join", (infor) => {
-        socket.join(infor.slug);
-    });
-    socket.on("reply", (infor) => {
-        const token = infor.token;
-        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
-            if (err) {
-                return;
-            }
+	socket.on("join", (infor) => {
+		socket.join(infor.slug);
+	});
+	socket.on("reply", (infor) => {
+		const token = infor.token;
+		jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+			if (err) {
+				return;
+			}
 
-            const oldUser = await User.findById(user.id);
+			const oldUser = await User.findById(user.id);
 
-            const baseComment = await Comment.findById(infor?.id);
+			const baseComment = await Comment.findById(infor?.id);
 
-            const comment = new Comment({
-                user: oldUser._id,
-                content: infor.content,
-                movie: "",
-                chapter: "",
-            });
+			const comment = new Comment({
+				user: oldUser._id,
+				content: infor.content,
+				movie: "",
+				chapter: "",
+			});
 
-            await comment.save();
-            baseComment.replies.push(comment._id);
-            await Comment.findByIdAndUpdate(infor?.id, {
-                replies: baseComment.replies,
-            });
+			await comment.save();
+			baseComment.replies.push(comment._id);
+			await Comment.findByIdAndUpdate(infor?.id, {
+				replies: baseComment.replies,
+			});
 
-            const com = { ...comment._doc };
-            delete com["user"];
-            io.to(infor.slug).emit("backRep", {
-                user: {
-                    ...oldUser._doc,
-                },
-                ...com,
-                commentid: baseComment._id,
-            });
-        });
-    });
-    socket.on("comment", (infor) => {
-        const token = infor.token;
-        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
-            if (err) {
-                return;
-            }
-            const oldUser = await User.findById(user.id);
-            const comment = new Comment({
-                user: oldUser._id,
-                content: infor.content,
-                movie: infor.slug,
-                chapter: infor.chapter,
-            });
+			const com = { ...comment._doc };
+			delete com["user"];
+			io.to(infor.slug).emit("backRep", {
+				user: {
+					...oldUser._doc,
+				},
+				...com,
+				commentid: baseComment._id,
+			});
+		});
+	});
+	socket.on("comment", (infor) => {
+		const token = infor.token;
+		jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+			if (err) {
+				return;
+			}
+			const oldUser = await User.findById(user.id);
+			const comment = new Comment({
+				user: oldUser._id,
+				content: infor.content,
+				movie: infor.slug,
+				chapter: infor.chapter,
+			});
 
-            await comment.save();
+			await comment.save();
 
-            const com = { ...comment._doc };
-            delete com["user"];
-            io.in(infor.slug).emit("backMan", {
-                user: {
-                    ...oldUser._doc,
-                },
-                ...com,
-            });
-        });
-    });
-    socket.on("Like", async (infor) => {
-        const comment = await Comment.findById(infor?.id);
-        if (!comment) {
-        } else {
-            if (infor?.type) {
-                await Comment.findByIdAndUpdate(infor?.id, {
-                    likes: comment?.likes + 1,
-                });
-            } else {
-                await Comment.findByIdAndUpdate(infor?.id, {
-                    likes: comment?.likes - 1,
-                });
-            }
-        }
-    });
+			const com = { ...comment._doc };
+			delete com["user"];
+			io.in(infor.slug).emit("backMan", {
+				user: {
+					...oldUser._doc,
+				},
+				...com,
+			});
+		});
+	});
+	socket.on("Like", async (infor) => {
+		const comment = await Comment.findById(infor?.id);
+		if (!comment) {
+		} else {
+			if (infor?.type) {
+				await Comment.findByIdAndUpdate(infor?.id, {
+					likes: comment?.likes + 1,
+				});
+			} else {
+				await Comment.findByIdAndUpdate(infor?.id, {
+					likes: comment?.likes - 1,
+				});
+			}
+		}
+	});
 
-    socket.on("rating", async (infor) => {
-        const product = await Product.findById(infor?.id);
-        if (product) {
-            if (infor?.type) {
-                await Product.findByIdAndUpdate(infor?.id, {
-                    stars: product?.stars + infor?.star,
-                });
-            } else {
-                await Product.findByIdAndUpdate(infor?.id, {
-                    stars: product?.stars + infor?.star,
-                    reviewers: product?.reviewers + 1,
-                });
-            }
-        }
-    });
-    socket.on("watching", async (infor) => {
-        const product = await Product.findById(infor?.id);
-        if (product) {
-            await Product.findByIdAndUpdate(infor?.id, {
-                watchs: product?.watchs + 1,
-            });
-        }
-    });
-    socket.on("UpdateMessage", async (infor) => {
-        const token = infor.token;
-        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
-            if (err) {
-                return;
-            }
-            const comment = await Comment.findById(infor?.id);
-            if (comment) {
-                await Comment.findByIdAndUpdate(infor?.id, {
-                    content: infor?.content,
-                });
-                if (user?.id?.toString() === comment?.user?.toString()) {
-                    io.to(infor?.slug).emit("updateComment", {
-                        content: infor?.content,
-                        id: infor?.id,
-                    });
-                }
-            }
-        });
-    });
-    socket.on("deleteMessage", (infor) => {
-        const token = infor.token;
-        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
-            if (err) {
-                return;
-            }
-            const comment = await Comment.findById(infor?.id);
-            if (comment) {
-                if (user?.id?.toString() === comment?.user?.toString()) {
-                    comment?.replies?.forEach(async (item) => {
-                        await Comment.findByIdAndDelete(item);
-                    });
-                    await Comment.findByIdAndDelete(infor?.id);
-                    io.to(infor?.slug).emit("deleteMessageReply", {
-                        id: infor?.id,
-                    });
-                }
-            }
-        });
-    });
-    socket.on("UpdateReplyMessage", async (infor) => {
-        const token = infor.token;
-        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
-            if (err) {
-                return;
-            }
-            const comment = await Comment.findById(infor?.id);
-            if (comment) {
-                if (user?.id?.toString() === comment?.user?.toString()) {
-                    await Comment.findByIdAndUpdate(infor?.id, {
-                        content: infor?.content,
-                    });
-                    io.to(infor?.slug).emit("updateCommentReply", {
-                        content: infor?.content,
-                        id: infor?.id,
-                    });
-                }
-            }
-        });
-    });
-    socket.on("deleteReplyComment", async (infor) => {
-        const token = infor.token;
-        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
-            if (err) {
-                console.log(err);
-                return;
-            }
-            const comment = await Comment.findById(infor?.idparent);
-            const comChild = await Comment.findById(infor?.id);
-            if (comment && comChild) {
-                if (user?.id?.toString() === comChild?.user?.toString()) {
-                    comment.replies = comment?.replies?.filter(
-                        (item) => item?.toString() !== infor?.id?.toString()
-                    );
-                    await Comment.findByIdAndUpdate(infor?.idparent, {
-                        replies: comment.replies,
-                    });
-                    await Comment.findByIdAndDelete(infor?.id);
-                    io.to(infor?.slug).emit("deleteReplyBack", {
-                        id: infor?.id,
-                        parentid: infor?.idparent,
-                    });
-                }
-            }
-        });
-    });
-    socket.on("follows", async (infor) => {
-        const token = infor.token;
-        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
-            if (err) {
-                console.log(err);
-                return;
-            }
-            const oldUser = await User.findById(user?.id);
-            if (oldUser) {
-                const product = await Product.findById(infor?.id);
-                if (product) {
-                    const check = oldUser.follows.some(
-                        (item) => item?.toString() === product?._id?.toString()
-                    );
-                    let num = false;
-                    if (!check) {
-                        oldUser.follows.push(product?._id);
-                        await Product.findByIdAndUpdate(product?._id, {
-                            follows: product.follows + 1,
-                        });
-                        num = true;
-                    } else {
-                        oldUser.follows = oldUser.follows.filter(
-                            (item) =>
-                                item?.toString() !== product?._id?.toString()
-                        );
-                        await Product.findByIdAndUpdate(product?._id, {
-                            follows: product.follows - 1,
-                        });
-                    }
-                    await User.findByIdAndUpdate(user?.id, {
-                        follows: oldUser.follows,
-                    });
-                    socket.emit("BackFollow", {
-                        follows: oldUser.follows,
-                        num: num,
-                    });
-                }
-            }
-        });
-    });
+	socket.on("rating", async (infor) => {
+		const product = await Product.findById(infor?.id);
+		if (product) {
+			if (infor?.type) {
+				await Product.findByIdAndUpdate(infor?.id, {
+					stars: product?.stars + infor?.star,
+				});
+			} else {
+				await Product.findByIdAndUpdate(infor?.id, {
+					stars: product?.stars + infor?.star,
+					reviewers: product?.reviewers + 1,
+				});
+			}
+		}
+	});
+	socket.on("watching", async (infor) => {
+		const product = await Product.findById(infor?.id);
+		if (product) {
+			await Product.findByIdAndUpdate(infor?.id, {
+				watchs: product?.watchs + 1,
+			});
+		}
+	});
+	socket.on("UpdateMessage", async (infor) => {
+		const token = infor.token;
+		jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+			if (err) {
+				return;
+			}
+			const comment = await Comment.findById(infor?.id);
+			if (comment) {
+				await Comment.findByIdAndUpdate(infor?.id, {
+					content: infor?.content,
+				});
+				if (user?.id?.toString() === comment?.user?.toString()) {
+					io.to(infor?.slug).emit("updateComment", {
+						content: infor?.content,
+						id: infor?.id,
+					});
+				}
+			}
+		});
+	});
+	socket.on("deleteMessage", (infor) => {
+		const token = infor.token;
+		jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+			if (err) {
+				return;
+			}
+			const comment = await Comment.findById(infor?.id);
+			if (comment) {
+				if (user?.id?.toString() === comment?.user?.toString()) {
+					comment?.replies?.forEach(async (item) => {
+						await Comment.findByIdAndDelete(item);
+					});
+					await Comment.findByIdAndDelete(infor?.id);
+					io.to(infor?.slug).emit("deleteMessageReply", {
+						id: infor?.id,
+					});
+				}
+			}
+		});
+	});
+	socket.on("UpdateReplyMessage", async (infor) => {
+		const token = infor.token;
+		jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+			if (err) {
+				return;
+			}
+			const comment = await Comment.findById(infor?.id);
+			if (comment) {
+				if (user?.id?.toString() === comment?.user?.toString()) {
+					await Comment.findByIdAndUpdate(infor?.id, {
+						content: infor?.content,
+					});
+					io.to(infor?.slug).emit("updateCommentReply", {
+						content: infor?.content,
+						id: infor?.id,
+					});
+				}
+			}
+		});
+	});
+	socket.on("deleteReplyComment", async (infor) => {
+		const token = infor.token;
+		jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+			if (err) {
+				console.log(err);
+				return;
+			}
+			const comment = await Comment.findById(infor?.idparent);
+			const comChild = await Comment.findById(infor?.id);
+			if (comment && comChild) {
+				if (user?.id?.toString() === comChild?.user?.toString()) {
+					comment.replies = comment?.replies?.filter(
+						(item) => item?.toString() !== infor?.id?.toString()
+					);
+					await Comment.findByIdAndUpdate(infor?.idparent, {
+						replies: comment.replies,
+					});
+					await Comment.findByIdAndDelete(infor?.id);
+					io.to(infor?.slug).emit("deleteReplyBack", {
+						id: infor?.id,
+						parentid: infor?.idparent,
+					});
+				}
+			}
+		});
+	});
+	socket.on("follows", async (infor) => {
+		const token = infor.token;
+		jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+			if (err) {
+				console.log(err);
+				return;
+			}
+			const oldUser = await User.findById(user?.id);
+			if (oldUser) {
+				const product = await Product.findById(infor?.id);
+				if (product) {
+					const check = oldUser.follows.some(
+						(item) => item?.toString() === product?._id?.toString()
+					);
+					let num = false;
+					if (!check) {
+						oldUser.follows.push(product?._id);
+						await Product.findByIdAndUpdate(product?._id, {
+							follows: product.follows + 1,
+						});
+						num = true;
+					} else {
+						oldUser.follows = oldUser.follows.filter(
+							(item) => item?.toString() !== product?._id?.toString()
+						);
+						await Product.findByIdAndUpdate(product?._id, {
+							follows: product.follows - 1,
+						});
+					}
+					await User.findByIdAndUpdate(user?.id, {
+						follows: oldUser.follows,
+					});
+					socket.emit("BackFollow", {
+						follows: oldUser.follows,
+						num: num,
+					});
+				}
+			}
+		});
+	});
 
-    socket.on("reading", async (infor) => {
-        const token = infor.token;
-        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
-            if (err) {
-                console.log(err);
-                return;
-            }
-            const oldUser = await User.findById(user?.id);
-            if (oldUser) {
-                const product = await Product.findById(infor?.id);
-                if (product) {
-                    const check = oldUser.reads.some(
-                        (item) =>
-                            item?.readId?.toString() ===
-                            product?._id?.toString()
-                    );
-                    if (check) {
-                        oldUser.reads = oldUser.reads.map((item) => {
-                            if (
-                                item?.readId?.toString() ===
-                                product?._id?.toString()
-                            ) {
-                                const check2 = item?.chapters.some(
-                                    (item) => item === infor.chapter
-                                );
-                                if (!check2) {
-                                    item.chapters.push(infor.chapter);
-                                }
-                            }
-                            return item;
-                        });
-                    } else {
-                        oldUser.reads.push({
-                            readId: product?._id,
-                            chapters: [infor.chapter],
-                        });
-                    }
-                    await User.findByIdAndUpdate(oldUser._id, {
-                        reads: oldUser.reads,
-                    });
-                    socket.emit("backReading", {
-                        reads: oldUser.reads,
-                    });
-                }
-            }
-        });
-    });
+	socket.on("reading", async (infor) => {
+		const token = infor.token;
+		jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+			if (err) {
+				console.log(err);
+				return;
+			}
+			const oldUser = await User.findById(user?.id);
+			if (oldUser) {
+				const product = await Product.findById(infor?.id);
+				if (product) {
+					const check = oldUser.reads.some(
+						(item) => item?.readId?.toString() === product?._id?.toString()
+					);
+					if (check) {
+						oldUser.reads = oldUser.reads.map((item) => {
+							if (item?.readId?.toString() === product?._id?.toString()) {
+								const check2 = item?.chapters.some(
+									(item) => item === infor.chapter
+								);
+								if (!check2) {
+									item.chapters.push(infor.chapter);
+								}
+							}
+							return item;
+						});
+					} else {
+						oldUser.reads.push({
+							readId: product?._id,
+							chapters: [infor.chapter],
+						});
+					}
+					await User.findByIdAndUpdate(oldUser._id, {
+						reads: oldUser.reads,
+					});
+					socket.emit("backReading", {
+						reads: oldUser.reads,
+					});
+				}
+			}
+		});
+	});
 
-    socket.on("liking", async (infor) => {
-        const token = infor.token;
-        jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
-            if (err) {
-                console.log(err);
-                return;
-            }
-            const oldUser = await User.findById(user?.id);
-            if (oldUser) {
-                const product = await Product.findById(infor?.id);
-                if (product) {
-                    let num = false;
-                    const check = oldUser.likes.some(
-                        (item) => item?.toString() === product?._id?.toString()
-                    );
-                    if (!check) {
-                        oldUser.likes.push(product?._id);
-                        await Product.findByIdAndUpdate(product?._id, {
-                            likes: product.likes + 1,
-                        });
-                        num = true;
-                    } else {
-                        oldUser.likes = oldUser.likes.filter(
-                            (item) =>
-                                item?.toString() !== product?._id?.toString()
-                        );
-                        await Product.findByIdAndUpdate(product?._id, {
-                            likes: product.likes - 1,
-                        });
-                    }
-                    await User.findByIdAndUpdate(oldUser?._id, {
-                        likes: oldUser.likes,
-                    });
-                    socket.emit("backLiking", {
-                        num: num,
-                    });
-                }
-            }
-        });
-    });
+	socket.on("liking", async (infor) => {
+		const token = infor.token;
+		jwt.verify(token, process.env.ACCESSTOKEN, async (err, user) => {
+			if (err) {
+				console.log(err);
+				return;
+			}
+			const oldUser = await User.findById(user?.id);
+			if (oldUser) {
+				const product = await Product.findById(infor?.id);
+				if (product) {
+					let num = false;
+					const check = oldUser.likes.some(
+						(item) => item?.toString() === product?._id?.toString()
+					);
+					if (!check) {
+						oldUser.likes.push(product?._id);
+						await Product.findByIdAndUpdate(product?._id, {
+							likes: product.likes + 1,
+						});
+						num = true;
+					} else {
+						oldUser.likes = oldUser.likes.filter(
+							(item) => item?.toString() !== product?._id?.toString()
+						);
+						await Product.findByIdAndUpdate(product?._id, {
+							likes: product.likes - 1,
+						});
+					}
+					await User.findByIdAndUpdate(oldUser?._id, {
+						likes: oldUser.likes,
+					});
+					socket.emit("backLiking", {
+						num: num,
+					});
+				}
+			}
+		});
+	});
 
-    socket.on("reports", async (infor) => {
-        const reports = await Report.findOne({ comment: infor?.to?._id });
-        const comment = await Comment.findById(infor?.to?._id);
-        const user = await User.findById(infor?.to?.user?._id);
-        if (!reports) {
-            const report = new Report({
-                comment: comment?._id,
-                to: user?._id,
-                number: 1,
-            });
-            await report.save();
-        } else {
-            await Report.findOneAndUpdate(
-                {
-                    comment: comment?._id,
-                },
-                {
-                    number: reports.number + 1,
-                }
-            );
-        }
-    });
+	socket.on("reports", async (infor) => {
+		const reports = await Report.findOne({ comment: infor?.to?._id });
+		const comment = await Comment.findById(infor?.to?._id);
+		const user = await User.findById(infor?.to?.user?._id);
+		if (!reports) {
+			const report = new Report({
+				comment: comment?._id,
+				to: user?._id,
+				number: 1,
+			});
+			await report.save();
+		} else {
+			await Report.findOneAndUpdate(
+				{
+					comment: comment?._id,
+				},
+				{
+					number: reports.number + 1,
+				}
+			);
+		}
+	});
 });
 
 mongoose
-    .connect(process.env.DATABASE_URL, {
-        useNewUrlParser: true,
-    })
-    .then((res) => {
-        console.log("connected to database");
-    })
-    .catch((err) => {
-        console.log("error databsae:" + err);
-    });
+	.connect(process.env.DATABASE_URL, {
+		useNewUrlParser: true,
+	})
+	.then((res) => {
+		console.log("connected to database");
+	})
+	.catch((err) => {
+		console.log("error databsae:" + err);
+	});
 
 const PORT = process.env.PORT || 5000;
 
 router(app);
 
 http.listen(PORT, () => {
-    console.log("Your website are runnning.");
+	console.log("Your website are runnning.");
 });
